@@ -10,14 +10,15 @@ enum Args {
     /// 現在の壁紙を取得します
     Get {
         // TODO: `value_parser`を使用します。参照: https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html#validated-values
-		// これは、`clap`マクロを使用してコマンドライン引数のデフォルト値を設定しています。`short`と`long`は引数の短い形式と長い形式を指定し、`default_value_t`はデフォルト値を指定しています。
+        // これは、`clap`マクロを使用してコマンドライン引数のデフォルト値を設定しています。`short`と`long`は引数の短い形式と長い形式を指定し、`default_value_t`はデフォルト値を指定しています。
         /// モニターのインデックス（0から開始）
         #[arg(short, long, default_value_t = 0)]
         monitor: usize,
     },
 
     /// 現在の壁紙を設定します
-    #[command(arg_required_else_help = true)] // この記述は、`clap`マクロを使用してコマンドライン引数が必須であることを示しています。
+    #[command(arg_required_else_help = true)]
+    // この記述は、`clap`マクロを使用してコマンドライン引数が必須であることを示しています。
     Set {
         /// 壁紙へのパス
         path: PathBuf,
@@ -44,10 +45,16 @@ fn if_chosen_monitor_within_range(
     // モニターが選択範囲内にある場合に実行する関数
     func: impl FnOnce(&Monitor) -> Result<(), String>,
 ) -> Result<(), String> {
+    // `match`はRustの制御フロー構造で、パターンマッチングを提供します。
+    // ここでは、`monitors.get(choice)`の結果に対してパターンマッチングを行っています。
     match monitors.get(choice) {
-        Some(m) => func(m),
+        Some(m) => {
+            // `Some`は`Option`型の一部で、値が存在する場合に使用されます。
+            // ここでは、選択されたモニターが範囲内に存在する場合、そのモニターを引数として関数`func`を実行します。
+            func(m)
+        }
         None => Err(format!(
-			// "利用可能なモニターは0から{}ですが、{choice}が指定されました"
+            // "利用可能なモニターは0から{}ですが、{choice}が指定されました"
             "The available monitors are from 0 - {} but {choice} was given",
             monitors.len() - 1,
         )),
@@ -55,12 +62,13 @@ fn if_chosen_monitor_within_range(
 }
 
 fn main() -> Result<(), String> {
-	// `DesktopWallpaper`の新しいインスタンスを作成し、エラーが発生した場合にエラーメッセージを文字列に変換しています。
+    // `DesktopWallpaper`の新しいインスタンスを作成し、エラーが発生した場合にエラーメッセージを文字列に変換しています。
     let mut wallpaper = DesktopWallpaper::new().map_err(|e| e.to_string())?;
 
+    // 全モニターの取得
     let monitors = wallpaper
         .get_monitors()
-		// "利用可能なモニターの取得に失敗しました: {error}"
+        // "利用可能なモニターの取得に失敗しました: {error}"
         .map_err(|error| format!("Failed to retrieve available monitors: {error}"))?;
 
     let args = Args::parse();
@@ -81,7 +89,7 @@ fn main() -> Result<(), String> {
             // モニターが選択された場合の処理
             wallpaper
                 .set_wallpaper(monitor, Path::new(&path), scale)
-				// デスクトップ壁紙の設定に失敗しました: {error}
+                // デスクトップ壁紙の設定に失敗しました: {error}
                 .map_err(|error| format!("Failed to set the desktop wallpaper: {error}"))
         })?,
     }
